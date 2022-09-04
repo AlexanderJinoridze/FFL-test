@@ -1,22 +1,19 @@
+import { useEffect } from "react";
 import { useLinkClickHandler } from "react-router-dom";
-import { motion } from "framer-motion";
 
-export default function Home() {
+import MotionPage from "../components/MotionPage";
+
+export default function Home(props) {
     let toTest = useLinkClickHandler("/test");
 
-    return (
-        <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="page"
-        >
-            <h3>See if you are eligibile to even start your path to be a part of elit, to be Legionaire</h3>
+    useEffect(() => { document.title = props.title }, []);
 
-            <button onClick={event => {
-                event.preventDefault();
-                toTest(event);
-            }}>Take the Test</button>
-        </motion.div>
+    return (
+        <MotionPage className="welcome">
+            <div className="welcome__content">
+                <h1>See if you are eligible to even start your path to be a part of The elite, to be Legionnaire</h1>
+                <button className="btn btn--red" onClick={event => { toTest(event) }}>Take the Test</button>
+            </div>
+        </MotionPage>
     );
 }

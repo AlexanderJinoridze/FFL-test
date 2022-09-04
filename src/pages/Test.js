@@ -1,184 +1,162 @@
-import { motion } from "framer-motion";
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 
-export default function Test() {
+import Gender from "../components/Gender";
+import Literacy from "../components/Literacy";
+import Age from "../components/Age";
+import BMI from "../components/BMI";
+import MotionPage from "../components/MotionPage";
+
+export default function Test(props) {
     const navigate = useNavigate();
 
-    const [fields, setFields] = useState({
-        sex: "",
-        read: "",
+    const testMap = {
+        "gender": [
+            "gender"
+        ],
+        "literacy": [
+            "literacy"
+        ],
+        "age": [
+            "age"
+        ],
+        "bmi": [
+            "height",
+            "weight"
+        ]
+    };
+    const testSteps = Object.keys(testMap);
+    const errorMessages = {
+        "gender": "Pick a gender of yours",
+        "literacy": "Pick the answer to the question",
+        "age": "Enter your age",
+        "height": "Enter your height in centimeters",
+        "weight": "Enter your weight in kilograms"
+    };
+    const getBmi = (height, weight) => parseFloat((weight / Math.pow(height / 100, 2)).toFixed(1));
+    const notEmpty = fieldValue => !(fieldValue + "");
+    const checks = {
+        gender: gender => gender === "male",
+        literacy: literacy => literacy === "yes",
+        age: age => age >= 17.5 && age <= 39.5,
+        bmi: (height, weight) => {
+            const bmi = getBmi(height, weight);
+            return bmi >= 20 && bmi <= 30
+        }
+    };
+
+
+    const [testStep, setTestStep] = useState(testSteps[0]);
+    const [fieldValues, setFieldValues] = useState({
+        gender: "",
+        literacy: "",
         age: "",
         height: "",
-        weight: "",
+        weight: ""
     });
     const [validationActive, setValidationActive] = useState(false);
     const [errors, setErrors] = useState({});
 
-    const errorMessages = {
-        "sex": "Pick a gender of yours",
-        "read": "Pick the answer to the question",
-        "age": "This field can not be empty",
-        "height": "This field can not be empty",
-        "weight": "This field can not be empty"
-    }
+    useEffect(() => { document.title = props.title }, [])
 
-    const isEmpty = fieldValue => {
-        return !!fieldValue;
-    }
-
-    const isFormValid = () => {
+    const isFormValid = step => {
+        let currentStepFields = testMap[step];
         let errors = {};
-        let formIsValid = true;
+        let isFormValid = true;
 
-        for (const [key, value] of Object.entries(fields)) {
-            if (!isEmpty(value)) {
-                formIsValid = false;
-                errors[key] = errorMessages[key];
+        currentStepFields.forEach(fieldName => {
+            const fieldValue = fieldValues[fieldName];
+            if (notEmpty(fieldValue)) {
+                isFormValid = false;
+                errors[fieldName] = errorMessages[fieldName];
             }
-        }
+        });
 
         setErrors(errors);
-        return formIsValid;
+        return isFormValid;
     }
 
-    const handleFormChange = (event, field) => {
+    const handleFieldChange = (event) => {
         const target = event.target;
+        const fieldName = target.name;
         const value = target.value;
 
         if (target.validity.valid) {
-
-            setFields(prevState => {
-                const newState = { ...prevState };
-
-                newState[field] = value;
-
-                return newState;
-            })
+            setFieldValues(prevState => ({ ...prevState, [fieldName]: value }))
 
             if (validationActive) {
-                if (isEmpty(value)) {
-                    setErrors(prevState => {
-                        const newState = { ...prevState };
-                        newState[field] = "";
-                        return newState;
-                    })
-                } else {
-                    setErrors(prevState => {
-                        const newState = { ...prevState };
-                        newState[field] = errorMessages[field];
-                        return newState;
-                    })
-                }
+                setErrors(prevState => ({ ...prevState, [fieldName]: notEmpty(value) ? errorMessages[fieldName] : "" }))
             }
         }
     }
 
-    const handleSubmit = event => {
-        if (isFormValid()) {
-            navigate("/results", { state: fields })
+    const handleSubmit = () => {
+        if (isFormValid(testStep)) {
+            const currentStepIndex = testSteps.indexOf(testStep);
+            const nextStepIndex = currentStepIndex + 1;
+            const nextStep = testSteps[nextStepIndex];
+
+            const args = testMap[testStep].map(fieldName => fieldValues[fieldName]);
+
+            if (checks[testStep](...args)) {
+                window.scrollTo({ top: 0, behavior: "smooth" });
+                setTestStep(nextStep);
+
+                if (!nextStep) {
+                    navigate("/results", { state: { success: true } })
+                }
+            } else {
+                navigate("/results", { state: { success: false, reason: testStep } })
+            }
         } else {
             setValidationActive(true);
         }
     }
 
-    useEffect(() => {
-        console.log(fields)
-    }, [fields])
-
     return (
-        <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="page"
-        >
-            <div>
-                <h4>Gender</h4>
-                <strong>Select your sex</strong>
-                <div onChange={event => handleFormChange(event, "sex")}>
-                    <div>
-                        <label htmlFor="male">Male</label>
-                        <input type="radio" id="male" value="male" name="gender" />
-                    </div>
-                    <div>
-                        <label htmlFor="female">Female</label>
-                        <input type="radio" id="female" value="female" name="gender" />
-                    </div>
-                </div>
+        <MotionPage className="page">
+            <div className="page__main">
+                {
+                    testStep === "gender" &&
+                    <MotionPage noScale={true}>
+                        <Gender onChange={handleFieldChange} error={errors["gender"]} />
+                    </MotionPage>
+                }
 
-                <span style={{ color: "red" }}>{errors["sex"]}</span>
+                {
+                    testStep === "literacy" &&
+                    <MotionPage noScale={true}>
+                        <Literacy onChange={handleFieldChange} error={errors["literacy"]} />
+                    </MotionPage>
+                }
+
+                {
+                    testStep === "age" &&
+                    <MotionPage noScale={true}>
+                        <Age onInput={handleFieldChange} value={fieldValues["age"]} error={errors["age"]} />
+                    </MotionPage>
+                }
+
+                {
+                    testStep === "bmi" &&
+                    <MotionPage noScale={true}>
+                        <BMI
+                            onInput={handleFieldChange}
+                            values={{
+                                height: fieldValues["height"],
+                                weight: fieldValues["weight"]
+                            }}
+                            errors={{
+                                height: errors["height"],
+                                weight: errors["weight"]
+                            }}
+                        />
+                    </MotionPage>
+                }
             </div>
-
-            <div>
-                <h4>Ability of read and write</h4>
-                <strong>Are you able to read and write on your native language?</strong>
-                <div onChange={event => handleFormChange(event, "read")}>
-                    <div>
-                        <label htmlFor="yes">Yes</label>
-                        <input type="radio" id="yes" value="yes" name="read" />
-                    </div>
-                    <div>
-                        <label htmlFor="no">No</label>
-                        <input type="radio" id="no" value="no" name="read" />
-                    </div>
-                </div>
-
-                <span style={{ color: "red" }}>{errors["read"]}</span>
+            <div className="page__footer">
+                <button className="btn btn--green" onClick={handleSubmit}>Submit</button>
             </div>
-
-            <div>
-                <h4>Age</h4>
-                <label htmlFor="age">
-                    <strong>How old are you?</strong>
-                </label>
-                <input
-                    type="text"
-                    id="age"
-                    pattern="[0-9]*"
-                    onInput={event => handleFormChange(event, "age")}
-                    value={fields.age}
-                />
-                <span>Years</span>
-
-                <span style={{ color: "red" }}>{errors["age"]}</span>
-            </div>
-
-            <div>
-                <h4>Height</h4>
-                <label htmlFor="height">
-                    <strong>What is your height in centimeters?</strong>
-                </label>
-                <input
-                    type="text"
-                    id="height"
-                    pattern="[0-9]*"
-                    onInput={event => handleFormChange(event, "height")}
-                    value={fields.height}
-                />
-                <span>cm</span>
-
-                <span style={{ color: "red" }}>{errors["height"]}</span>
-            </div>
-
-            <div>
-                <h4>Weight</h4>
-                <label htmlFor="weight">
-                    <strong>What is your weight in centimeters?</strong>
-                </label>
-                <input
-                    type="text"
-                    id="weight"
-                    pattern="[0-9]*"
-                    onInput={event => handleFormChange(event, "weight")}
-                    value={fields.weight}
-                />
-                <span>Kg</span>
-
-                <span style={{ color: "red" }}>{errors["weight"]}</span>
-            </div>
-
-            <button onClick={handleSubmit}>Submit</button>
-        </motion.div>
+        </MotionPage >
     );
 }

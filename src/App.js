@@ -2,8 +2,8 @@ import { Routes, Route, useLocation, Link } from "react-router-dom";
 import Home from "./pages/Home";
 import Test from "./pages/Test";
 import Results from "./pages/Results";
-import "./index.css";
-import logo from "./images/logo.svg";
+import NotFound from "./pages/NotFound";
+import "./index.scss";
 
 
 export default function App() {
@@ -11,15 +11,23 @@ export default function App() {
 
     return (
         <div className="app">
-            <Link to="/"><img id="logo" src={logo} alt="french foreign legion eligibility test app" /></Link>
-            <div className="container">
+            <header>
+                <Link to="/">
+                    <div className="logo"></div>
+                </Link>
+            </header>
+            <main>
                 <Routes location={location} key={location.pathname}>
-                    <Route path="/" element={<Home />} />
-                    <Route path="test" element={<Test />} />
-                    <Route path="results" element={<Results />} />
+                    <Route path='*' element={<NotFound title="FFL - 404 Page Not Found" />} />
+
+                    <Route path="/" element={<Home title="FFL - Home" />} />
+                    <Route path="test" element={<Test title="FFL - Test" />} />
+                    <Route path="results" element={<Results title="FFL - Results" />} />
                 </Routes>
-            </div>
-            <div className="footer">Footer</div>
+            </main>
+            <footer>
+                <span className="pale-text">French Foreign Legion Eligibility Test App<br />All Rights Reserved 2022</span>
+            </footer>
         </div>
     );
 }

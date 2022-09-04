@@ -1,96 +1,77 @@
-import { motion } from "framer-motion";
 import { useEffect, useState } from "react";
+import { useLinkClickHandler } from "react-router-dom";
 import { useLocation, useNavigate } from "react-router-dom";
+import MotionPage from "../components/MotionPage";
+import PageTitle from "../components/PageTitle";
 
 export default function Results(props) {
     const location = useLocation();
     const navigate = useNavigate();
     const passedData = location.state;
 
+
+    const failReasons = {
+        gender: "Only males can join the French Foreign Legion",
+        literacy: "You have to be able to read and write on your native language to join the Legion",
+        age: "Your age has to be between 17.5 and 39.5 years",
+        bmi: "Your body mass index has to be between 20 and 30"
+    }
+
+    const toHome = useLinkClickHandler("/");
+
     const [loading, setLoading] = useState(true);
-
-    const [genderPass, setGenderPass] = useState();
-    const [readPass, setReadPass] = useState();
-    const [agePass, setAgePass] = useState();
-    const [bmiPass, setBmiPass] = useState();
-
-    const [testPass, setTestPass] = useState();
-
-    const [bmi, setBmi] = useState(0);
-
-    const isValidBMI = bmi => {
-        return bmi > 20 && bmi < 30;
-    }
-
-    const isValidAge = age => {
-        return age > 17.5 && age < 39.5;
-    }
-
-    const isValidGender = gender => {
-        return gender === "male";
-    }
-
-    const isValidRead = read => {
-        return read === "yes";
-    }
-
-    const getBMI = (weight, height) => parseFloat((weight / Math.pow(height / 100, 2)).toFixed(1))
+    const [success, setSuccess] = useState();
+    const [failReason, setFailReason] = useState(null);
 
     useEffect(() => {
-        if (passedData) {
-            const { weight, height } = passedData;
+        document.title = props.title;
 
-            setBmi(getBMI(weight, height))
+        if (passedData) {
+            const { success, reason } = passedData;
+
+            navigate(location.pathname, { replace: true });
+            setSuccess(success);
+            setFailReason(reason);
         } else {
-            navigate("/")
+            navigate("/");
         }
     }, []);
 
     useEffect(() => {
         if (passedData) {
-            const { sex, read, age } = passedData;
-
-            setGenderPass(isValidGender(sex));
-            setReadPass(isValidRead(read));
-            setAgePass(isValidAge(age));
-            setBmiPass(isValidBMI(bmi));
+            setLoading(false);
         }
-    }, [bmi])
-
-    useEffect(() => {
-        if (passedData) {
-            setTestPass([genderPass, readPass, agePass, bmiPass].every(elem => elem));
-            setLoading(false)
-        }
-    }, [genderPass, readPass, agePass, bmiPass])
+    }, [success, failReason, passedData])
 
     return (
-        <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="page"
-        >
-            {
-                loading ?
-                    <span>LOADING</span>
-                    :
-                    <>
-                        {testPass ? <h1>TEST PASSED</h1> : <h1>TEST FAILED</h1>}
-                        <div className={genderPass ? "eligible" : "ineligible"}>
-                            <h2>GENDER: {passedData.sex}</h2>
+        <MotionPage className="page">
+            <div className="page__main">
+                {
+                    loading ?
+                        <span>LOADING</span>
+                        :
+                        <div className="results">
+                            <div className={`results__icon ${success ? "results__icon--success" : "results__icon--fail"}`}></div>
+                            <PageTitle
+                                title={
+                                    success ?
+                                        "Test Passed"
+                                        :
+                                        "Test Failed"
+                                }
+                                subtitle={
+                                    failReason ?
+                                        failReasons[failReason]
+                                        :
+                                        "Congrats! you are eligible to start your path to become a legionnaire"
+                                }
+                            />
                         </div>
-                        <div className={readPass ? "eligible" : "ineligible"}>
-                            <h2>READ: {passedData.read}</h2>
-                        </div>
-                        <div className={agePass ? "eligible" : "ineligible"}>
-                            <h2>AGE: {passedData.age}</h2>
-                        </div>
-                        <div className={bmiPass ? "eligible" : "ineligible"}>
-                            <h2>BMI: {bmi}</h2>
-                        </div>
-                    </>
-            }
-        </motion.div>
+                }
+            </div>
+            <div className="page__footer">
+                <button className="btn btn--red" onClick={toHome}>Go to Home</button>
+            </div>
+        </MotionPage>
     );
 }
